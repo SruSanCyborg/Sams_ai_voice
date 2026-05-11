@@ -20,9 +20,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="ECHO-3D Backend", version="0.1.0", lifespan=lifespan)
 
+_origins = list(settings.cors_origins)
+if settings.cors_origin_extra:
+    _origins += [o.strip() for o in settings.cors_origin_extra.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

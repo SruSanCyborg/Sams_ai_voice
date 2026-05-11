@@ -8,7 +8,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
     openai_api_key: str = ""
     whisper_model: str = "tiny.en"
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001", "https://*.vercel.app"]
+    cors_origin_extra: str = ""  # comma-separated additional origins for production
 
     class Config:
         env_file = ".env"
