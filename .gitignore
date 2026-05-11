@@ -1,0 +1,16 @@
+node_modules/
+.next/
+dist/
+__pycache__/
+*.pyc
+.env
+.env.local
+apps/web/.env.local
+apps/backend/.env
+apps/web/public/wasm/*.wasm
+apps/web/public/wasm/*.js
+apps/web/public/wasm/package.json
+apps/web/public/wasm/.gitignore
+target/
+*.tar.gz
+*.7z

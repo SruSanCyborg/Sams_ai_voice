@@ -1,0 +1,13 @@
+export const SAMPLE_RATE = 48_000;
+export const FRAME_SIZE = 480; // 10ms at 48kHz
+export const HRTF_LENGTH = 200; // taps per HRTF
+export const HRTF_PARTITION_SIZE = 128;
+export const HRTF_NUM_PARTITIONS = Math.ceil(HRTF_LENGTH / HRTF_PARTITION_SIZE); // 2
+export const VAD_THRESHOLD = 0.5;
+export const WHISPER_DISTANCE = 1.5; // meters
+export const POSITION_BROADCAST_INTERVAL_MS = 50;
+export const ASR_CHUNK_DURATION_MS = 2_000;
+export const EMOTION_WINDOW_MS = 1_000;
+export const HRTF_CACHE_SIZE = 10;
+export const HRTF_SKIP_ANGLE_DEG = 2; // skip re-computation below this delta
+export const MODERATOR_POLL_INTERVAL_MS = 30_000;
