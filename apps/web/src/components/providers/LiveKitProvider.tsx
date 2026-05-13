@@ -6,10 +6,12 @@ import {
   RoomEvent,
   Track,
   RemoteParticipant,
-  LocalParticipant,
-  DataPacket_Kind,
+  RemoteTrack,
+  RemoteTrackPublication,
 } from "livekit-client";
 import { useRoomStore } from "@/store/useRoomStore";
+import { useAudioStore } from "@/store/useAudioStore";
+import { useAudioPipeline } from "@/components/providers/AudioPipelineProvider";
 import { POSITION_BROADCAST_INTERVAL_MS } from "@/lib/constants";
 import type { Vec3 } from "@/types/spatial";
 
@@ -22,6 +24,8 @@ interface Props {
 export function LiveKitProvider({ roomId, userName, children }: Props) {
   const roomRef = useRef<Room | null>(null);
   const broadcastTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pipeline = useAudioPipeline();
+  const { micEnabled } = useAudioStore();
   const {
     setLocalId,
     addParticipant,
@@ -31,7 +35,10 @@ export function LiveKitProvider({ roomId, userName, children }: Props) {
     getLocalParticipant,
   } = useRoomStore();
 
+  // Connect once on mount
   useEffect(() => {
+    if (!pipeline) return;
+    const p = pipeline;
     let mounted = true;
 
     async function connect() {
@@ -45,14 +52,35 @@ export function LiveKitProvider({ roomId, userName, children }: Props) {
       const room = new Room({ adaptiveStream: true, dynacast: true });
       roomRef.current = room;
 
+      // ── Remote audio track wiring ──────────────────────────────────────
+      room.on(RoomEvent.TrackSubscribed, (
+        track: RemoteTrack,
+        _pub: RemoteTrackPublication,
+        participant: RemoteParticipant,
+      ) => {
+        if (!mounted || track.kind !== Track.Kind.Audio) return;
+        p.addRemoteTrack(participant.sid, track.mediaStreamTrack);
+      });
+
+      room.on(RoomEvent.TrackUnsubscribed, (
+        track: RemoteTrack,
+        _pub: RemoteTrackPublication,
+        participant: RemoteParticipant,
+      ) => {
+        if (!mounted || track.kind !== Track.Kind.Audio) return;
+        p.removeRemoteTrack(participant.sid);
+      });
+
+      // ── Participant lifecycle ──────────────────────────────────────────
       room.on(RoomEvent.ParticipantConnected, (p: RemoteParticipant) => {
         if (!mounted) return;
         addParticipant(p.sid, p.name ?? p.sid, false);
       });
 
-      room.on(RoomEvent.ParticipantDisconnected, (p: RemoteParticipant) => {
+      room.on(RoomEvent.ParticipantDisconnected, (rp: RemoteParticipant) => {
         if (!mounted) return;
-        removeParticipant(p.sid);
+        removeParticipant(rp.sid);
+        p.removeRemoteTrack(rp.sid);
       });
 
       room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
@@ -63,6 +91,7 @@ export function LiveKitProvider({ roomId, userName, children }: Props) {
         });
       });
 
+      // ── Spatial position sync ─────────────────────────────────────────
       room.on(RoomEvent.DataReceived, (payload, participant) => {
         if (!mounted || !participant) return;
         try {
@@ -75,7 +104,7 @@ export function LiveKitProvider({ roomId, userName, children }: Props) {
 
       await room.connect(
         livekit_url ?? process.env.NEXT_PUBLIC_LIVEKIT_URL ?? "ws://localhost:7880",
-        token
+        token,
       );
 
       if (!mounted) return;
@@ -84,20 +113,25 @@ export function LiveKitProvider({ roomId, userName, children }: Props) {
       setLocalId(local.sid);
       addParticipant(local.sid, local.name ?? userName, true);
 
-      // Add existing remote participants
-      room.remoteParticipants.forEach((p) => {
-        addParticipant(p.sid, p.name ?? p.sid, false);
+      // Wire audio for participants already in the room
+      room.remoteParticipants.forEach((rp) => {
+        addParticipant(rp.sid, rp.name ?? rp.sid, false);
+        rp.audioTrackPublications.forEach((pub) => {
+          if (pub.track) {
+            p.addRemoteTrack(rp.sid, pub.track.mediaStreamTrack);
+          }
+        });
       });
 
-      // Broadcast local position every 50ms
+      // Enable local mic — LiveKit handles capture + publish
+      await room.localParticipant.setMicrophoneEnabled(true);
+
+      // Broadcast local position at 50ms intervals
       broadcastTimer.current = setInterval(() => {
         const localP = getLocalParticipant();
         if (!localP) return;
         const msg = JSON.stringify({ type: "position", position: localP.position });
-        room.localParticipant.publishData(
-          new TextEncoder().encode(msg),
-          { reliable: false }
-        );
+        room.localParticipant.publishData(new TextEncoder().encode(msg), { reliable: false });
       }, POSITION_BROADCAST_INTERVAL_MS);
     }
 
@@ -108,7 +142,12 @@ export function LiveKitProvider({ roomId, userName, children }: Props) {
       if (broadcastTimer.current) clearInterval(broadcastTimer.current);
       roomRef.current?.disconnect();
     };
-  }, [roomId, userName]);
+  }, [roomId, userName, pipeline]);
+
+  // Keep LiveKit mic in sync with the UI mute button
+  useEffect(() => {
+    roomRef.current?.localParticipant.setMicrophoneEnabled(micEnabled).catch(() => {});
+  }, [micEnabled]);
 
   return <>{children}</>;
 }

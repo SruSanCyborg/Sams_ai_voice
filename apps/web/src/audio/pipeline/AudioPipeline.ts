@@ -95,6 +95,7 @@ export class AudioPipeline {
 
   addRemoteTrack(participantId: string, track: MediaStreamTrack): void {
     if (!this.ctx) return;
+    this.ctx.resume().catch(() => {});
     if (this.panners.has(participantId)) this.removeRemoteTrack(participantId);
 
     const stream = new MediaStream([track]);

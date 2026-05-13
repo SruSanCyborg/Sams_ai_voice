@@ -21,8 +21,8 @@ function RoomInner() {
   const { accessibilityMode, isRecording } = useAudioStore();
 
   return (
-    <LiveKitProvider roomId={roomId} userName={userName}>
-      <AudioPipelineProvider>
+    <AudioPipelineProvider>
+      <LiveKitProvider roomId={roomId} userName={userName}>
         <div className="fixed inset-0 bg-space-900">
           {/* Full-screen 3D canvas */}
           <Scene />
@@ -60,8 +60,8 @@ function RoomInner() {
             </div>
           </div>
         </div>
-      </AudioPipelineProvider>
-    </LiveKitProvider>
+      </LiveKitProvider>
+    </AudioPipelineProvider>
   );
 }
 
