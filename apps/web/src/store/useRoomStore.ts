@@ -18,6 +18,7 @@ interface RoomState {
   updateEmotion: (id: string, emotion: Participant["emotion"]) => void;
   addCaption: (caption: Caption) => void;
   getLocalParticipant: () => Participant | undefined;
+  resetRoom: () => void;
 }
 
 export const useRoomStore = create<RoomState>((set, get) => ({
@@ -96,5 +97,9 @@ export const useRoomStore = create<RoomState>((set, get) => ({
     const { localId, participants } = get();
     if (!localId) return undefined;
     return participants.get(localId);
+  },
+
+  resetRoom() {
+    set({ participants: new Map(), captions: [], localId: null, hostId: null });
   },
 }));

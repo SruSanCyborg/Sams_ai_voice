@@ -1,18 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Mic, MicOff, Volume2, VolumeX, Subtitles, Circle,
-  Accessibility, LogOut, Music, Waves
+  Accessibility, LogOut, Music, Brain, Loader2,
 } from "lucide-react";
 import { useAudioStore } from "@/store/useAudioStore";
+import { useRoomStore } from "@/store/useRoomStore";
 import { MorphSelector } from "./MorphSelector";
 import { RoomPresetSelector } from "./RoomPresetSelector";
 import { useSpatialRecorder } from "@/hooks/useSpatialRecorder";
 
-interface Props {
-  roomId: string;
-}
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+
+interface Props { roomId: string; }
 
 export function ControlPanel({ roomId }: Props) {
   const router = useRouter();
@@ -24,126 +26,126 @@ export function ControlPanel({ roomId }: Props) {
     musicEnabled, setMusicEnabled,
   } = useAudioStore();
   const { isRecording, toggle: toggleRecording } = useSpatialRecorder();
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function runModerator() {
+    if (!BACKEND) { setAiError("No backend URL set"); return; }
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const participants = [...useRoomStore.getState().participants.values()].map((p) => ({
+        id: p.id,
+        name: p.name,
+        position: p.position,
+        speaking: p.speaking,
+      }));
+      const res = await fetch(`${BACKEND}/moderator/compose`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participants, speaking_history: [] }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const updatePosition = useRoomStore.getState().updatePosition;
+      (data.suggestions ?? []).forEach((s: { participant_id: string; suggested_position: [number, number, number] }) => {
+        updatePosition(s.participant_id, s.suggested_position);
+      });
+    } catch (e: any) {
+      setAiError(e.message);
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   return (
-    <div className="glass rounded-2xl px-4 py-3 flex items-center gap-2 shadow-2xl shadow-black/50">
-      {/* Mic */}
-      <IconButton
-        active={micEnabled}
-        onClick={() => setMic(!micEnabled)}
-        activeIcon={<Mic className="w-4 h-4" />}
-        inactiveIcon={<MicOff className="w-4 h-4" />}
-        tooltip={micEnabled ? "Mute" : "Unmute"}
-        dangerWhenInactive
-      />
+    <div className="flex flex-col items-center gap-1">
+      {aiError && (
+        <div className="text-xs text-red-400 bg-red-500/10 px-3 py-1 rounded-lg">{aiError}</div>
+      )}
+      <div className="glass rounded-2xl px-4 py-3 flex items-center gap-2 shadow-2xl shadow-black/50">
+        {/* Mic */}
+        <Btn active={micEnabled} onClick={() => setMic(!micEnabled)}
+          activeIcon={<Mic className="w-4 h-4" />} inactiveIcon={<MicOff className="w-4 h-4" />}
+          tooltip={micEnabled ? "Mute" : "Unmute"} danger={!micEnabled} />
 
-      {/* Speaker */}
-      <IconButton
-        active={speakerEnabled}
-        onClick={() => setSpeaker(!speakerEnabled)}
-        activeIcon={<Volume2 className="w-4 h-4" />}
-        inactiveIcon={<VolumeX className="w-4 h-4" />}
-        tooltip={speakerEnabled ? "Deafen" : "Undeafen"}
-        dangerWhenInactive
-      />
+        {/* Speaker */}
+        <Btn active={speakerEnabled} onClick={() => setSpeaker(!speakerEnabled)}
+          activeIcon={<Volume2 className="w-4 h-4" />} inactiveIcon={<VolumeX className="w-4 h-4" />}
+          tooltip={speakerEnabled ? "Deafen" : "Undeafen"} danger={!speakerEnabled} />
 
-      <Divider />
+        <Div />
 
-      {/* Voice morph */}
-      <MorphSelector />
+        <MorphSelector />
+        <RoomPresetSelector />
 
-      {/* Room preset */}
-      <RoomPresetSelector />
+        <Div />
 
-      <Divider />
+        {/* Captions */}
+        <Btn active={captionsEnabled} onClick={() => setCaptions(!captionsEnabled)}
+          activeIcon={<Subtitles className="w-4 h-4" />} inactiveIcon={<Subtitles className="w-4 h-4 opacity-40" />}
+          tooltip="Toggle captions" />
 
-      {/* Captions */}
-      <IconButton
-        active={captionsEnabled}
-        onClick={() => setCaptions(!captionsEnabled)}
-        activeIcon={<Subtitles className="w-4 h-4" />}
-        inactiveIcon={<Subtitles className="w-4 h-4 opacity-40" />}
-        tooltip="Toggle captions"
-      />
+        {/* AI Moderator */}
+        <button
+          onClick={runModerator}
+          disabled={aiLoading}
+          title="AI Moderator — auto-arrange spatial positions"
+          className={`p-2.5 rounded-xl transition-all ${
+            aiLoading
+              ? "bg-cyan-500/20 text-cyan-400 cursor-wait"
+              : "bg-white/5 text-slate-400 hover:bg-cyan-500/20 hover:text-cyan-300"
+          }`}
+        >
+          {aiLoading
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <Brain className="w-4 h-4" />}
+        </button>
 
-      {/* Music */}
-      <IconButton
-        active={musicEnabled}
-        onClick={() => setMusicEnabled(!musicEnabled)}
-        activeIcon={<Music className="w-4 h-4" />}
-        inactiveIcon={<Music className="w-4 h-4 opacity-40" />}
-        tooltip="Spatial music"
-      />
+        {/* Music */}
+        <Btn active={musicEnabled} onClick={() => setMusicEnabled(!musicEnabled)}
+          activeIcon={<Music className="w-4 h-4" />} inactiveIcon={<Music className="w-4 h-4 opacity-40" />}
+          tooltip="Spatial music" />
 
-      {/* Record */}
-      <button
-        onClick={toggleRecording}
-        title={isRecording ? "Stop recording" : "Record spatial session"}
-        className={`p-2.5 rounded-xl transition-all ${
-          isRecording
-            ? "bg-red-500/20 text-red-400 animate-pulse"
-            : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
-        }`}
-      >
-        <Circle className={`w-4 h-4 ${isRecording ? "fill-current" : ""}`} />
-      </button>
+        {/* Record */}
+        <button onClick={toggleRecording} title={isRecording ? "Stop recording" : "Record"}
+          className={`p-2.5 rounded-xl transition-all ${isRecording ? "bg-red-500/20 text-red-400 animate-pulse" : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"}`}>
+          <Circle className={`w-4 h-4 ${isRecording ? "fill-current" : ""}`} />
+        </button>
 
-      {/* Accessibility */}
-      <IconButton
-        active={accessibilityMode}
-        onClick={() => setAccessibility(!accessibilityMode)}
-        activeIcon={<Accessibility className="w-4 h-4" />}
-        inactiveIcon={<Accessibility className="w-4 h-4 opacity-40" />}
-        tooltip="Visual accessibility mode"
-      />
+        {/* Accessibility */}
+        <Btn active={accessibilityMode} onClick={() => setAccessibility(!accessibilityMode)}
+          activeIcon={<Accessibility className="w-4 h-4" />} inactiveIcon={<Accessibility className="w-4 h-4 opacity-40" />}
+          tooltip="Accessibility" />
 
-      <Divider />
+        <Div />
 
-      {/* Leave */}
-      <button
-        onClick={() => router.push("/")}
-        title="Leave room"
-        className="p-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all"
-      >
-        <LogOut className="w-4 h-4" />
-      </button>
+        {/* Leave */}
+        <button onClick={() => router.push("/")} title="Leave"
+          className="p-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
+          <LogOut className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }
 
-function Divider() {
+function Div() {
   return <div className="w-px h-6 bg-white/10 mx-1" />;
 }
 
-interface IconButtonProps {
-  active: boolean;
-  onClick: () => void;
-  activeIcon: React.ReactNode;
-  inactiveIcon: React.ReactNode;
-  tooltip: string;
-  dangerWhenInactive?: boolean;
-}
-
-function IconButton({
-  active,
-  onClick,
-  activeIcon,
-  inactiveIcon,
-  tooltip,
-  dangerWhenInactive,
-}: IconButtonProps) {
+function Btn({ active, onClick, activeIcon, inactiveIcon, tooltip, danger }: {
+  active: boolean; onClick: () => void;
+  activeIcon: React.ReactNode; inactiveIcon: React.ReactNode;
+  tooltip: string; danger?: boolean;
+}) {
   return (
-    <button
-      onClick={onClick}
-      title={tooltip}
+    <button onClick={onClick} title={tooltip}
       className={`p-2.5 rounded-xl transition-all ${
-        active
-          ? "bg-violet-500/20 text-violet-300 hover:bg-violet-500/30"
-          : dangerWhenInactive
-          ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+        active ? "bg-violet-500/20 text-violet-300 hover:bg-violet-500/30"
+          : danger ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
           : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
-      }`}
-    >
+      }`}>
       {active ? activeIcon : inactiveIcon}
     </button>
   );
