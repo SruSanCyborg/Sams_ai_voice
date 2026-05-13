@@ -6,8 +6,10 @@ import {
   Mic, MicOff, Volume2, VolumeX, Subtitles, Circle,
   Accessibility, LogOut, Music, Brain, Loader2,
 } from "lucide-react";
+import { useLocalParticipant } from "@livekit/components-react";
 import { useAudioStore } from "@/store/useAudioStore";
 import { useRoomStore } from "@/store/useRoomStore";
+import { getAudioCtx } from "@/audio/SpatialAudioRenderer";
 import { MorphSelector } from "./MorphSelector";
 import { RoomPresetSelector } from "./RoomPresetSelector";
 import { useSpatialRecorder } from "@/hooks/useSpatialRecorder";
@@ -25,7 +27,25 @@ export function ControlPanel({ roomId }: Props) {
     accessibilityMode, setAccessibility,
     musicEnabled, setMusicEnabled,
   } = useAudioStore();
+  const { localParticipant } = useLocalParticipant();
   const { isRecording, toggle: toggleRecording } = useSpatialRecorder();
+
+  function toggleMic() {
+    const next = !micEnabled;
+    setMic(next);
+    localParticipant?.setMicrophoneEnabled(next).catch(console.error);
+  }
+
+  function toggleSpeaker() {
+    const next = !speakerEnabled;
+    setSpeaker(next);
+    // Suspend/resume the shared AudioContext so all spatial tracks go silent
+    try {
+      const ctx = getAudioCtx();
+      if (next) ctx.resume().catch(() => {});
+      else ctx.suspend().catch(() => {});
+    } catch {}
+  }
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
@@ -65,12 +85,12 @@ export function ControlPanel({ roomId }: Props) {
       )}
       <div className="glass rounded-2xl px-4 py-3 flex items-center gap-2 shadow-2xl shadow-black/50">
         {/* Mic */}
-        <Btn active={micEnabled} onClick={() => setMic(!micEnabled)}
+        <Btn active={micEnabled} onClick={toggleMic}
           activeIcon={<Mic className="w-4 h-4" />} inactiveIcon={<MicOff className="w-4 h-4" />}
           tooltip={micEnabled ? "Mute" : "Unmute"} danger={!micEnabled} />
 
         {/* Speaker */}
-        <Btn active={speakerEnabled} onClick={() => setSpeaker(!speakerEnabled)}
+        <Btn active={speakerEnabled} onClick={toggleSpeaker}
           activeIcon={<Volume2 className="w-4 h-4" />} inactiveIcon={<VolumeX className="w-4 h-4" />}
           tooltip={speakerEnabled ? "Deafen" : "Undeafen"} danger={!speakerEnabled} />
 
