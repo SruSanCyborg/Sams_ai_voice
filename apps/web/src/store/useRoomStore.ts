@@ -7,8 +7,10 @@ interface RoomState {
   participants: Map<string, Participant>;
   captions: Caption[];
   localId: string | null;
+  hostId: string | null;
 
   setLocalId: (id: string) => void;
+  setHost: (id: string) => void;
   addParticipant: (id: string, name: string, isLocal: boolean) => void;
   removeParticipant: (id: string) => void;
   updatePosition: (id: string, position: Vec3) => void;
@@ -22,10 +24,10 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   participants: new Map(),
   captions: [],
   localId: null,
+  hostId: null,
 
-  setLocalId(id) {
-    set({ localId: id });
-  },
+  setLocalId(id) { set({ localId: id }); },
+  setHost(id) { set({ hostId: id }); },
 
   addParticipant(id, name, isLocal) {
     set((s) => {
@@ -48,7 +50,11 @@ export const useRoomStore = create<RoomState>((set, get) => ({
     set((s) => {
       const next = new Map(s.participants);
       next.delete(id);
-      return { participants: next };
+      // If host leaves, assign to next participant
+      const newHost = s.hostId === id
+        ? ([...next.values()].find(p => !p.isLocal)?.id ?? [...next.values()][0]?.id ?? null)
+        : s.hostId;
+      return { participants: next, hostId: newHost };
     });
   },
 
@@ -83,9 +89,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   },
 
   addCaption(caption) {
-    set((s) => ({
-      captions: [...s.captions.slice(-20), caption],
-    }));
+    set((s) => ({ captions: [...s.captions.slice(-20), caption] }));
   },
 
   getLocalParticipant() {

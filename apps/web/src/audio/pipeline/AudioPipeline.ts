@@ -27,6 +27,14 @@ export class AudioPipeline {
   onSpeaking?: (speaking: boolean, amplitude: number) => void;
   onEmotion?: (emotion: string) => void;
 
+  resume(): void {
+    this.ctx?.resume().catch(() => {});
+  }
+
+  get audioState(): string {
+    return this.ctx?.state ?? "closed";
+  }
+
   async init(): Promise<void> {
     this.ctx = new AudioContext({ sampleRate: SAMPLE_RATE, latencyHint: "interactive" });
 

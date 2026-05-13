@@ -28,6 +28,7 @@ export function LiveKitProvider({ roomId, userName, children }: Props) {
   const { micEnabled } = useAudioStore();
   const {
     setLocalId,
+    setHost,
     addParticipant,
     removeParticipant,
     updateSpeaking,
@@ -112,6 +113,16 @@ export function LiveKitProvider({ roomId, userName, children }: Props) {
       const local = room.localParticipant;
       setLocalId(local.sid);
       addParticipant(local.sid, local.name ?? userName, true);
+
+      // First person in = host; otherwise earliest joiner is host
+      if (room.remoteParticipants.size === 0) {
+        setHost(local.sid);
+      } else {
+        const earliest = [...room.remoteParticipants.values()].sort(
+          (a, b) => (a.joinedAt?.getTime() ?? 0) - (b.joinedAt?.getTime() ?? 0)
+        )[0];
+        setHost(earliest?.sid ?? local.sid);
+      }
 
       // Wire audio for participants already in the room
       room.remoteParticipants.forEach((rp) => {
