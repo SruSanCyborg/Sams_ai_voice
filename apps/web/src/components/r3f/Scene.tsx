@@ -69,7 +69,7 @@ export function Scene() {
       camera={{ position: [0, 4, 8], fov: 60, near: 0.1, far: 100 }}
       gl={{ antialias: true, alpha: false }}
       dpr={[1, 2]}
-      frameloop="demand"
+      frameloop="always"
       style={{ background: "#0a0a1a" }}
     >
       <Suspense fallback={null}>

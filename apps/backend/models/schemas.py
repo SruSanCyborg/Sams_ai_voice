@@ -21,7 +21,7 @@ class PositionUpdate(BaseModel):
 
 
 class ModeratorRequest(BaseModel):
-    room_id: str
+    room_id: str = ""
     participants: list[dict]
     speaking_history: list[str] = []
 

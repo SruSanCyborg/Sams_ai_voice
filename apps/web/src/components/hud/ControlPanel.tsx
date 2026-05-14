@@ -6,7 +6,6 @@ import {
   Mic, MicOff, Volume2, VolumeX, Subtitles, Circle,
   Accessibility, LogOut, Music, Brain, Loader2,
 } from "lucide-react";
-import { useLocalParticipant } from "@livekit/components-react";
 import { useAudioStore } from "@/store/useAudioStore";
 import { useRoomStore } from "@/store/useRoomStore";
 import { getAudioCtx } from "@/audio/SpatialAudioRenderer";
@@ -14,7 +13,7 @@ import { MorphSelector } from "./MorphSelector";
 import { RoomPresetSelector } from "./RoomPresetSelector";
 import { useSpatialRecorder } from "@/hooks/useSpatialRecorder";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://web-production-99e58.up.railway.app";
 
 interface Props { roomId: string; }
 
@@ -27,13 +26,11 @@ export function ControlPanel({ roomId }: Props) {
     accessibilityMode, setAccessibility,
     musicEnabled, setMusicEnabled,
   } = useAudioStore();
-  const { localParticipant } = useLocalParticipant();
   const { isRecording, toggle: toggleRecording } = useSpatialRecorder();
 
   function toggleMic() {
-    const next = !micEnabled;
-    setMic(next);
-    localParticipant?.setMicrophoneEnabled(next).catch(console.error);
+    setMic(!micEnabled);
+    // VoiceMorphProvider reacts to micEnabled store change and mutes the track
   }
 
   function toggleSpeaker() {
@@ -63,7 +60,7 @@ export function ControlPanel({ roomId }: Props) {
       const res = await fetch(`${BACKEND}/moderator/compose`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ participants, speaking_history: [] }),
+        body: JSON.stringify({ room_id: roomId, participants, speaking_history: [] }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();

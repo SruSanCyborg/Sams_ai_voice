@@ -5,6 +5,8 @@ import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { LiveKitRoom } from "@livekit/components-react";
 import { AudioPipelineProvider } from "@/components/providers/AudioPipelineProvider";
 import { LiveKitBridge } from "@/components/providers/LiveKitBridge";
+import { VoiceMorphProvider } from "@/components/providers/VoiceMorphProvider";
+import { CaptionsProvider } from "@/components/providers/CaptionsProvider";
 import { SpatialAudioRenderer, resumeAudioCtx } from "@/audio/SpatialAudioRenderer";
 import { Scene } from "@/components/r3f/Scene";
 import { ControlPanel } from "@/components/hud/ControlPanel";
@@ -57,6 +59,8 @@ function RoomContent({ roomId, userName }: { roomId: string; userName: string })
       <AudioActivator />
       <SpatialAudioRenderer />
       <LiveKitBridge userName={userName} />
+      <VoiceMorphProvider />
+      <CaptionsProvider roomId={roomId} />
 
       <div className="fixed inset-0 bg-space-900">
         <Scene />
@@ -155,7 +159,7 @@ function RoomInner() {
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       token={token}
       connect={true}
-      audio={true}
+      audio={false}
       video={false}
       onDisconnected={() => router.push("/")}
     >
