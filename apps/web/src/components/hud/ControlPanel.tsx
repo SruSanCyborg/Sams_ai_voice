@@ -81,7 +81,10 @@ export function ControlPanel({ roomId }: Props) {
       {aiError && (
         <div className="text-xs text-red-400 bg-red-500/10 px-3 py-1 rounded-lg">{aiError}</div>
       )}
-      <div className="glass rounded-2xl px-4 py-3 flex items-center gap-2 shadow-2xl shadow-black/50">
+      <div
+        className="glass rounded-2xl px-4 py-3 flex items-center gap-2"
+        style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.07), 0 20px 60px rgba(0,0,0,0.65), 0 0 80px rgba(124,58,237,0.07)" }}
+      >
         {/* Mic */}
         <Btn active={micEnabled} onClick={toggleMic}
           activeIcon={<Mic className="w-4 h-4" />} inactiveIcon={<MicOff className="w-4 h-4" />}
@@ -163,12 +166,18 @@ function Btn({ active, onClick, activeIcon, inactiveIcon, tooltip, danger }: {
   tooltip: string; danger?: boolean;
 }) {
   return (
-    <button onClick={onClick} title={tooltip}
+    <button
+      onClick={onClick}
+      title={tooltip}
       className={`p-2.5 rounded-xl transition-all ${
-        active ? "bg-violet-500/20 text-violet-300 hover:bg-violet-500/30"
-          : danger ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+        active
+          ? "bg-violet-500/20 text-violet-300 hover:bg-violet-500/30"
+          : danger
+          ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
           : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
-      }`}>
+      }`}
+      style={active ? { boxShadow: "0 0 16px rgba(124,58,237,0.35)" } : undefined}
+    >
       {active ? activeIcon : inactiveIcon}
     </button>
   );
