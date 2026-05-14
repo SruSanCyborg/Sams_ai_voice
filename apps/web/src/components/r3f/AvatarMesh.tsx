@@ -108,7 +108,6 @@ export function AvatarMesh({ participant }: Props) {
           color={participant.isLocal ? "#22c55e" : "#e2e8f0"}
           anchorX="center"
           anchorY="middle"
-          font="/fonts/inter.woff"
         >
           {participant.name}
           {participant.isLocal ? " (you)" : ""}
