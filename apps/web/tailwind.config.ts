@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,6 +9,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+      },
       colors: {
         space: {
           950: "#05050f",
@@ -33,6 +37,11 @@ const config: Config = {
         "spin-slow": "spin 8s linear infinite",
         "fade-in": "fadeIn 0.2s ease-in-out",
         "slide-up": "slideUp 0.3s ease-out",
+        float: "float 4s ease-in-out infinite",
+        sonar: "sonar 2.5s ease-out infinite",
+        "sonar-delay": "sonar 2.5s ease-out 0.8s infinite",
+        "sonar-delay2": "sonar 2.5s ease-out 1.6s infinite",
+        shimmer: "shimmer 4s linear infinite",
       },
       keyframes: {
         fadeIn: {
@@ -42,6 +51,18 @@ const config: Config = {
         slideUp: {
           "0%": { opacity: "0", transform: "translateY(8px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-12px)" },
+        },
+        sonar: {
+          "0%": { transform: "scale(0.3)", opacity: "0.8" },
+          "100%": { transform: "scale(2)", opacity: "0" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "200% center" },
+          "100%": { backgroundPosition: "-200% center" },
         },
       },
     },
