@@ -1,21 +1,26 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import redis.asyncio as aioredis
 
 from config import settings
 from routers import rooms, presence, captions, moderator
 
-redis_client: aioredis.Redis | None = None
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global redis_client
-    redis_client = aioredis.from_url(settings.redis_url, decode_responses=True)
-    app.state.redis = redis_client
+    # Redis is optional — skip if not configured
+    try:
+        import redis.asyncio as aioredis
+        if settings.redis_url and "localhost" not in settings.redis_url:
+            client = aioredis.from_url(settings.redis_url, decode_responses=True)
+            app.state.redis = client
+            yield
+            await client.aclose()
+            return
+    except Exception as e:
+        print(f"[startup] Redis unavailable, running without it: {e}")
+    app.state.redis = None
     yield
-    await redis_client.aclose()
 
 
 app = FastAPI(title="ECHO-3D Backend", version="0.1.0", lifespan=lifespan)

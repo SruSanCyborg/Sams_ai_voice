@@ -8,7 +8,11 @@ router = APIRouter()
 
 @router.get("/room/{room_id}")
 async def room_presence(room_id: str, request: Request):
-    redis = request.app.state.redis
+    redis = getattr(request.app.state, "redis", None)
+    if not redis:
+        async def empty():
+            yield {"data": json.dumps({"type": "no_redis"})}
+        return EventSourceResponse(empty())
 
     async def event_generator():
         pubsub = redis.pubsub()
@@ -30,21 +34,19 @@ async def room_presence(room_id: str, request: Request):
 
 @router.post("/room/{room_id}/join")
 async def join_room(room_id: str, request: Request):
+    redis = getattr(request.app.state, "redis", None)
+    if not redis:
+        return {"ok": True, "note": "no redis"}
     body = await request.json()
-    redis = request.app.state.redis
-    await redis.publish(
-        f"room:{room_id}:presence",
-        json.dumps({"type": "join", **body}),
-    )
+    await redis.publish(f"room:{room_id}:presence", json.dumps({"type": "join", **body}))
     return {"ok": True}
 
 
 @router.post("/room/{room_id}/leave")
 async def leave_room(room_id: str, request: Request):
+    redis = getattr(request.app.state, "redis", None)
+    if not redis:
+        return {"ok": True, "note": "no redis"}
     body = await request.json()
-    redis = request.app.state.redis
-    await redis.publish(
-        f"room:{room_id}:presence",
-        json.dumps({"type": "leave", **body}),
-    )
+    await redis.publish(f"room:{room_id}:presence", json.dumps({"type": "leave", **body}))
     return {"ok": True}
