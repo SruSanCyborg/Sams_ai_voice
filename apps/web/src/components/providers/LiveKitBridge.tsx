@@ -30,6 +30,11 @@ export function LiveKitBridge({ userName }: Props) {
   // ── Local participant ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!localParticipant) return;
+    // Remove any stale "isLocal" entry from a previous SID (happens on reconnect)
+    const { participants } = useRoomStore.getState();
+    participants.forEach((p, id) => {
+      if (p.isLocal && id !== localParticipant.sid) removeParticipant(id);
+    });
     setLocalId(localParticipant.sid);
     addParticipant(localParticipant.sid, localParticipant.name ?? userName, true);
   }, [localParticipant?.sid]);

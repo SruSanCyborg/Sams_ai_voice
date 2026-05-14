@@ -1,4 +1,5 @@
 ﻿import type { VoiceMorphPreset } from "@/types/spatial";
+import { getAudioCtx } from "@/audio/SpatialAudioRenderer";
 
 function makeDistortionCurve(amount: number): Float32Array<ArrayBuffer> {
   const n = 256;
@@ -25,7 +26,9 @@ export class VoiceMorphPipeline {
       video: false,
     });
 
-    this.ctx = new AudioContext({ sampleRate: 48000, latencyHint: "interactive" });
+    // Reuse the shared AudioContext so it's already resumed after the AudioActivator click
+    this.ctx = getAudioCtx();
+    await this.ctx.resume();
     this.source = this.ctx.createMediaStreamSource(this.rawStream);
     this.effectInput = this.ctx.createGain();
     this.effectOutput = this.ctx.createGain();
@@ -126,7 +129,7 @@ export class VoiceMorphPipeline {
     this.clearEffects();
     try { this.source?.disconnect(); } catch {}
     try { this.destination?.disconnect(); } catch {}
-    this.ctx?.close().catch(() => {});
+    // Don't close the shared AudioContext — just stop the mic tracks
     this.rawStream?.getTracks().forEach((t) => t.stop());
     this.ctx = null;
     this.rawStream = null;

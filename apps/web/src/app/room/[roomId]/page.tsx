@@ -16,6 +16,7 @@ import { AccessibilityHUD } from "@/components/hud/AccessibilityHUD";
 import { WhisperBubble } from "@/components/hud/WhisperBubble";
 import { useAudioStore } from "@/store/useAudioStore";
 import { useRoomStore } from "@/store/useRoomStore";
+import { HelpCard } from "@/components/hud/HelpCard";
 import { Copy, Check, Volume2 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -96,8 +97,9 @@ function RoomContent({ roomId, userName }: { roomId: string; userName: string })
             </div>
           )}
 
-          {/* Bottom: controls */}
+          {/* Bottom: controls + help */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-auto">
+            <HelpCard />
             <ControlPanel roomId={roomId} />
           </div>
         </div>

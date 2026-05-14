@@ -23,6 +23,10 @@ export function VoiceMorphProvider() {
       .then(async (stream) => {
         const audioTrack = stream.getAudioTracks()[0];
         if (!audioTrack) return;
+        // Apply whatever morph the user may have picked before init finished
+        const { voiceMorph: currentMorph, micEnabled: muted } = useAudioStore.getState();
+        pipeline.applyPreset(currentMorph);
+        pipeline.setMicEnabled(muted);
         await localParticipant.publishTrack(audioTrack, {
           source: Track.Source.Microphone,
           dtx: true,
