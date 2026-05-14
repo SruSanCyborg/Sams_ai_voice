@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 import { useTracks } from "@livekit/components-react";
 import { Track, RemoteAudioTrack } from "livekit-client";
 import { useRoomStore } from "@/store/useRoomStore";
+import { useAudioStore } from "@/store/useAudioStore";
+import type { Vec3 } from "@/types/spatial";
 
 // ── Shared AudioContext ───────────────────────────────────────────────────────
 let _ctx: AudioContext | null = null;
@@ -81,10 +83,23 @@ export function applyRoomPreset(preset: string): void {
   _wetGain!.gain.setTargetAtTime(wet, ctx.currentTime, 0.15);
 }
 
+function dist2D(a: Vec3, b: Vec3) {
+  return Math.hypot(a[0] - b[0], a[2] - b[2]);
+}
+
 // ── One spatial node per remote track ────────────────────────────────────────
 function SpatialTrack({ sid, track }: { sid: string; track: RemoteAudioTrack }) {
   const pannerRef = useRef<PannerNode | null>(null);
-  const position = useRoomStore((s) => s.participants.get(sid)?.position ?? [0, 0, -2]);
+  const bubbleGainRef = useRef<GainNode | null>(null);
+  const position = useRoomStore((s) => (s.participants.get(sid)?.position ?? [0, 0, -2]) as Vec3);
+
+  const bubbleActive = useAudioStore((s) => s.bubbleActive);
+  const bubblePosition = useAudioStore((s) => s.bubblePosition);
+  const bubbleRadius = useAudioStore((s) => s.bubbleRadius);
+  const localPosition = useRoomStore((s) => {
+    const p = s.localId ? s.participants.get(s.localId) : undefined;
+    return (p?.position ?? [0, 0, 0]) as Vec3;
+  });
 
   useEffect(() => {
     const ctx = getAudioCtx();
@@ -96,6 +111,7 @@ function SpatialTrack({ sid, track }: { sid: string; track: RemoteAudioTrack }) 
 
     let source: MediaElementAudioSourceNode | null = null;
     let panner: PannerNode | null = null;
+    let bubbleGain: GainNode | null = null;
 
     try {
       source = ctx.createMediaElementSource(el);
@@ -106,8 +122,14 @@ function SpatialTrack({ sid, track }: { sid: string; track: RemoteAudioTrack }) 
       panner.rolloffFactor = 1;
       panner.setPosition(position[0], position[1], position[2]);
       pannerRef.current = panner;
+
+      bubbleGain = ctx.createGain();
+      bubbleGain.gain.value = 1;
+      bubbleGainRef.current = bubbleGain;
+
       source.connect(panner);
-      panner.connect(bus);
+      panner.connect(bubbleGain);
+      bubbleGain.connect(bus);
     } catch {
       el.autoplay = true;
       document.body.appendChild(el);
@@ -117,7 +139,9 @@ function SpatialTrack({ sid, track }: { sid: string; track: RemoteAudioTrack }) 
       track.detach(el);
       source?.disconnect();
       panner?.disconnect();
+      bubbleGain?.disconnect();
       pannerRef.current = null;
+      bubbleGainRef.current = null;
       el.remove();
     };
   }, [track]);
@@ -125,6 +149,21 @@ function SpatialTrack({ sid, track }: { sid: string; track: RemoteAudioTrack }) 
   useEffect(() => {
     pannerRef.current?.setPosition(position[0], position[1], position[2]);
   }, [position]);
+
+  // Gate audio based on sound bubble membership
+  useEffect(() => {
+    const g = bubbleGainRef.current;
+    if (!g) return;
+    const ctx = getAudioCtx();
+    let gain = 1;
+    if (bubbleActive) {
+      const localIn = dist2D(localPosition, bubblePosition) <= bubbleRadius;
+      const remoteIn = dist2D(position, bubblePosition) <= bubbleRadius;
+      // Mute remote only when local is inside the bubble and remote is outside
+      if (localIn && !remoteIn) gain = 0;
+    }
+    g.gain.setTargetAtTime(gain, ctx.currentTime, 0.06);
+  }, [bubbleActive, bubblePosition, bubbleRadius, localPosition, position]);
 
   return null;
 }

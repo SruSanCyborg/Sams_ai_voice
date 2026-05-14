@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Mic, MicOff, Volume2, VolumeX, Subtitles, Circle,
-  Accessibility, LogOut, Music, Brain, Loader2,
+  Accessibility, LogOut, Music, Brain, Loader2, Globe,
 } from "lucide-react";
 import { useAudioStore } from "@/store/useAudioStore";
 import { useRoomStore } from "@/store/useRoomStore";
@@ -25,6 +25,7 @@ export function ControlPanel({ roomId }: Props) {
     captionsEnabled, setCaptions,
     accessibilityMode, setAccessibility,
     musicEnabled, setMusicEnabled,
+    bubbleActive, setBubbleActive,
   } = useAudioStore();
   const { isRecording, toggle: toggleRecording } = useSpatialRecorder();
 
@@ -123,6 +124,11 @@ export function ControlPanel({ roomId }: Props) {
         <Btn active={musicEnabled} onClick={() => setMusicEnabled(!musicEnabled)}
           activeIcon={<Music className="w-4 h-4" />} inactiveIcon={<Music className="w-4 h-4 opacity-40" />}
           tooltip="Spatial music" />
+
+        {/* Sound Bubble Zone */}
+        <Btn active={bubbleActive} onClick={() => setBubbleActive(!bubbleActive)}
+          activeIcon={<Globe className="w-4 h-4" />} inactiveIcon={<Globe className="w-4 h-4 opacity-40" />}
+          tooltip={bubbleActive ? "Deactivate sound bubble" : "Activate sound bubble zone"} />
 
         {/* Record */}
         <button onClick={toggleRecording} title={isRecording ? "Stop recording" : "Record"}

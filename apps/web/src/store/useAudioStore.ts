@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { RoomPreset, VoiceMorphPreset } from "@/types/spatial";
+import type { RoomPreset, VoiceMorphPreset, Vec3 } from "@/types/spatial";
 
 interface AudioState {
   micEnabled: boolean;
@@ -11,6 +11,9 @@ interface AudioState {
   voiceMorph: VoiceMorphPreset;
   musicEnabled: boolean;
   musicVolume: number;
+  bubbleActive: boolean;
+  bubblePosition: Vec3;
+  bubbleRadius: number;
 
   setMic: (v: boolean) => void;
   setSpeaker: (v: boolean) => void;
@@ -21,6 +24,9 @@ interface AudioState {
   setVoiceMorph: (m: VoiceMorphPreset) => void;
   setMusicEnabled: (v: boolean) => void;
   setMusicVolume: (v: number) => void;
+  setBubbleActive: (v: boolean) => void;
+  setBubblePosition: (p: Vec3) => void;
+  setBubbleRadius: (r: number) => void;
 }
 
 export const useAudioStore = create<AudioState>((set) => ({
@@ -33,6 +39,9 @@ export const useAudioStore = create<AudioState>((set) => ({
   voiceMorph: "none",
   musicEnabled: false,
   musicVolume: 0.3,
+  bubbleActive: false,
+  bubblePosition: [0, 0, 0],
+  bubbleRadius: 3,
 
   setMic: (v) => set({ micEnabled: v }),
   setSpeaker: (v) => set({ speakerEnabled: v }),
@@ -43,4 +52,7 @@ export const useAudioStore = create<AudioState>((set) => ({
   setVoiceMorph: (m) => set({ voiceMorph: m }),
   setMusicEnabled: (v) => set({ musicEnabled: v }),
   setMusicVolume: (v) => set({ musicVolume: v }),
+  setBubbleActive: (v) => set({ bubbleActive: v }),
+  setBubblePosition: (p) => set({ bubblePosition: p }),
+  setBubbleRadius: (r) => set({ bubbleRadius: r }),
 }));

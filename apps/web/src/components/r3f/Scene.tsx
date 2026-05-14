@@ -13,6 +13,7 @@ import { SpatialGrid } from "./SpatialGrid";
 import { RoomPreset } from "./RoomPreset";
 import { HeadTracker } from "./HeadTracker";
 import { EmotionAura } from "./EmotionAura";
+import { SoundBubble } from "./SoundBubble";
 
 function SceneContent() {
   const participants = useRoomStore((s) => [...s.participants.values()]);
@@ -47,6 +48,7 @@ function SceneContent() {
       })}
 
       <HeadTracker />
+      <SoundBubble />
 
       {/* Post-processing */}
       <EffectComposer>

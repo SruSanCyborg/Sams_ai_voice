@@ -7,6 +7,7 @@ import { AudioPipelineProvider } from "@/components/providers/AudioPipelineProvi
 import { LiveKitBridge } from "@/components/providers/LiveKitBridge";
 import { VoiceMorphProvider } from "@/components/providers/VoiceMorphProvider";
 import { CaptionsProvider } from "@/components/providers/CaptionsProvider";
+import { SpatialMusicPlayer } from "@/components/providers/SpatialMusicPlayer";
 import { SpatialAudioRenderer, resumeAudioCtx } from "@/audio/SpatialAudioRenderer";
 import { Scene } from "@/components/r3f/Scene";
 import { ControlPanel } from "@/components/hud/ControlPanel";
@@ -62,6 +63,7 @@ function RoomContent({ roomId, userName }: { roomId: string; userName: string })
       <LiveKitBridge userName={userName} />
       <VoiceMorphProvider />
       <CaptionsProvider roomId={roomId} />
+      <SpatialMusicPlayer />
 
       <div className="fixed inset-0 bg-space-900">
         <Scene />
